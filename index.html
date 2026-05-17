@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Экономика Pro: Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="./tele-secure.js" defer></script>
+    <style>
+        :root {
+            --bg-color: #0f172a; 
+            --card-bg: #1e293b; 
+            --accent-blue: #2563eb; 
+            --text-main: #f1f5f9; 
+            --text-muted: #94a3b8; 
+            --border-color: #334155; 
+            --border-radius: 14px;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            max-width: 500px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            border-radius: var(--border-radius); 
+            border: 1px solid var(--border-color);
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Платный экран */
+        #paywall {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .lock-icon { font-size: 60px; margin-bottom: 20px; }
+        
+        .payment-info {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px dashed var(--accent-blue);
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .btn { 
+            padding: 14px; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            width: 100%;
+            transition: 0.2s;
+        }
+        .btn-primary { background: var(--accent-blue); color: #fff; }
+        .btn-secondary { background: #334155; color: #cbd5e1; margin-top: 10px;}
+
+        .input-key {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: #0f172a;
+            color: white;
+            margin: 15px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .creator-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 20px;
+            color: var(--accent-blue);
+            font-size: 0.85em;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .hidden { display: none !important; }
+        
+        /* Эффект замка на контенте */
+        #content-locker {
+            filter: blur(4px);
+            pointer-events: none;
+            user-select: none;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="paywall">
+        <div class="lock-icon">🔒</div>
+        <h2 style="margin: 0;">Доступ ограничен</h2>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 10px;">
+            Пробный период завершен. Для активации всех 300 вопросов оформите подписку.
+        </p>
+
+        <div class="payment-info">
+            <div style="font-size: 0.8em; color: var(--text-muted);">Стоимость: <b>30 000 сум</b></div>
+            <div style="font-size: 1.1em; font-weight: bold; margin: 8px 0; letter-spacing: 1px;">
+                5614 6887 0288 1144
+            </div>
+            <a href="https://t.me/nurislombekm" target="_blank" style="color: var(--accent-blue); text-decoration: none; font-size: 0.85em; font-weight: bold;">
+                👨‍💻 Админ: @nurislombekm
+            </a>
+        </div>
+
+        <div id="user-id-box" style="font-size: 0.8em; color: var(--text-muted);">
+            Ваш ID: <b id="my-id-display">загрузка...</b>
+        </div>
+
+        <input type="text" id="activation-key" class="input-key" placeholder="Введите ваш ключ">
+        <button class="btn btn-primary" onclick="handleActivation()">АКТИВИРОВАТЬ ДОСТУП</button>
+    </div>
+
+    <div id="content-locker">
+        <div style="text-align: center;">
+            <a href="https://t.me/nurislombekm" class="creator-badge">РАЗРАБОТКА: @NURISLOMBEKM</a>
+            <h1>📊 Экономика Pro</h1>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-primary" style="grid-column: span 2;">⚡ Начать экзамен</button>
+            <button class="btn btn-secondary">🧩 Тренировка</button>
+            <button class="btn btn-secondary">📖 База</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tgUserFull = "Пользователь";
+    let tgUserId = "";
+
+    // 1. Инициализация Telegram
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.expand();
+        const u = window.Telegram.WebApp.initDataUnsafe.user;
+        if (u) {
+            tgUserId = u.id.toString();
+            tgUserFull = `${u.first_name} (@${u.username || 'id'+u.id}) [ID: ${tgUserId}]`;
+            document.getElementById('my-id-display').innerText = tgUserId;
+            
+            // Уведомление о входе
+            setTimeout(() => {
+                if(window.sendVisitNotification) window.sendVisitNotification(tgUserFull);
+            }, 1000);
+        }
+    }
+
+    // 2. Проверка активации при загрузке
+    window.onload = () => {
+        const savedKey = localStorage.getItem('app_premium_key');
+        if (savedKey && validateKey(savedKey, tgUserId)) {
+            unlockApp();
+        }
+    };
+
+    // 3. Логика активации
+    function handleActivation() {
+        const input = document.getElementById('activation-key');
+        const key = input.value.trim();
+
+        if (validateKey(key, tgUserId)) {
+            localStorage.setItem('app_premium_key', key);
+            
+            // Уведомляем админа
+            if(window.sendActivationNotify) {
+                window.sendActivationNotify(tgUserFull, key);
+            }
+            
+            unlockApp();
+            alert("Поздравляем! Доступ успешно активирован.");
+        } else {
+            alert("Неверный ключ! Убедитесь, что ключ сгенерирован для вашего ID: " + tgUserId);
+        }
+    }
+
+    // Простая проверка (ключ должен содержать ID и быть длиннее 10 символов)
+    function validateKey(key, id) {
+        if (!key || !id) return false;
+        return key.includes(id) && key.length > 12;
+    }
+
+    function unlockApp() {
+        document.getElementById('paywall').classList.add('hidden');
+        const locker = document.getElementById('content-locker');
+        locker.style.filter = "none";
+        locker.style.pointerEvents = "all";
+        locker.style.opacity = "1";
+    }
+</script>
+
+</body>
+</html>
